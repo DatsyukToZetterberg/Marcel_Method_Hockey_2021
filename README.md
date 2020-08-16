@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+options(knitr.table.format = 'markdown')
 
 library(tidyverse) 
 library(here) 
@@ -16,6 +17,7 @@ library(stringr)
 library(dplyr) 
 library(ggplot2) 
 library(knitr)
+library(kableExtra)
 
 #Loading every library known to man. 
 
@@ -29,19 +31,31 @@ names(season_1718)
 
 #Things to note: In order to complete Marcel projections I need 1) Season weights (I'm sticking with 5/4/3) 2) I'll need to find each players average in the relevant seasons 3) I'll need to find the league average for F/D in each category 4) Regress the player usiong the league average at their position 5) Determine their projected TOI 6) Apply age adjustment 7) adjust based on 2020 baseline
 
-filtered_1718 <- season_1718 %>%
-              select(Player, Age, Tm, Pos, GP, G, A, PTS, PPG, PPA, S, BLK, HIT, PIM, FOW, FOL, TOI)
-           
-filtered_1819 <- season_1819 %>%
-              select(Player, Age, Tm, Pos, GP, G, A, PTS, PPG, PPA, S, BLK, HIT, PIM, FOW, FOL, TOI)
 
-filtered_1920 <- season_1920 %>%
-              select(Player, Age, Tm, Pos, GP, G, A, PTS, PPG, PPA, S, BLK, HIT, PIM, FOW, FOL, TOI)
+#Finding the league averages for the stats we're going to use is the first order of business: 
 
-filtered_1920 %>%
-  group_by(Pos) %>%
-  sum(filtered_1920,
-            mean_G = mean(G))
 
+mean_1920 <- season_1920 %>%
+          mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
+          group_by(Pos) %>%
+          summarize(
+          avg_G = mean(G, na.rm = TRUE),
+          avg_A = mean(A, na.rm = TRUE),
+          avg_PTS = mean(PTS, na.rm = TRUE),
+          avg_PPG = mean(PPG, na.rm = TRUE),
+          avg_PPA = mean(PPA, na.rm = TRUE),
+          avg_S = mean(S, na.rm = TRUE),
+          avg_BLK = mean(BLK, na.rm = TRUE),
+          avg_HIT = mean(HIT, na.rm = TRUE),
+          avg_PIM = mean(PIM, na.rm = TRUE),
+          avg_FOW = mean(FOW, na.rm = TRUE),
+          avg_FOL = mean(FOL, na.rm = TRUE),
+          avg_TOI = mean(TOI, na.rm = TRUE),
+          n = n())
+
+      
+table_1920 <- mean_1920 %>%
+    kable() %>%
+    kable_styling()
         
-        
+
