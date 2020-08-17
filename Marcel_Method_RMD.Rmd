@@ -1,7 +1,7 @@
 ---
-title: "Creating Marcel Method Hockey"
+title: "Marcel_Method"
 author: "Alex Walker"
-date: "14/08/2020"
+date: "16/08/2020"
 output: html_document
 ---
 
@@ -9,12 +9,30 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
 library(tidyverse) 
 library(here) 
 library(readxl) 
-library(stringr) 
-library(dplyr) 
-library(ggplot2) 
 library(knitr)
 library(kableExtra)
 library(rmarkdown)
@@ -32,7 +50,7 @@ names(season_1718)
 Things to note: In order to complete Marcel projections I need 1) Season weights (I'm sticking with 5/4/3) 2) I'll need to find each players average in the relevant seasons 3) I'll need to find the league average for F/D in each category 4) Regress the player usiong the league average at their position 5) Determine their projected TOI 6) Apply age adjustment 7) adjust based on 2020 baseline
 
 
-##Finding the league averages for the stats we're going to use is the first order of business: 
+## Finding the league averages for the stats we're going to use is the first order of business: 
 
 
 lg_avg_1920 <- season_1920 %>%
@@ -40,9 +58,9 @@ lg_avg_1920 <- season_1920 %>%
           group_by(Pos) %>%
           summarize(
           AVG_gp = mean(GP, na.rm = TRUE),
-        lg_avg_G = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_A = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PTS = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+  lg_avg_G = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+  lg_avg_A = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+  lg_avg_PTS = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
         lg_avg_PPG = mean(PPG, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
         lg_avg_PPA = mean(PPA, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
         lg_avg_S = mean(S, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
@@ -93,6 +111,74 @@ lg_avg_1718 <- season_1718 %>%
         lg_avg_TOI = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
           n = n())
 
+## Finding each players rate stats
 
+plyr_rt_1718 <- season_1718 %>%
+            mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
+          group_by(Pos) %>%
+          summarize(
+          player = Player,
+          gp = GP,
+          g_toi = G/TOI,
+          a_toi = A/TOI,
+          pts_toi = PTS/TOI,
+          ppg_toi = PPG/TOI,
+          ppa_toi = PPA/TOI,
+          s_toi = S/TOI,
+          blk_toi = BLK/TOI,
+          hit_toi = HIT/TOI,
+          pim_toi = PIM/TOI,
+          fow_toi = FOW/TOI,
+          hit_toi = HIT/TOI,
+          pim_toi = PIM/TOI,
+          fow_toi = FOW/TOI,
+          fol_toi = FOL/TOI,
+          toi_gp = TOI/GP,
+          n=n())
+          
+plyr_rt_1819 <- season_1819 %>%
+            mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
+          group_by(Pos) %>%
+          summarize(
+          player = Player,
+          gp = GP,
+          g_toi = G/TOI,
+          a_toi = A/TOI,
+          pts_toi = PTS/TOI,
+          ppg_toi = PPG/TOI,
+          ppa_toi = PPA/TOI,
+          s_toi = S/TOI,
+          blk_toi = BLK/TOI,
+          hit_toi = HIT/TOI,
+          pim_toi = PIM/TOI,
+          fow_toi = FOW/TOI,
+          hit_toi = HIT/TOI,
+          pim_toi = PIM/TOI,
+          fow_toi = FOW/TOI,
+          fol_toi = FOL/TOI,
+          toi_gp = TOI/GP,
+          n=n())
 
+plyr_rt_1920 <- season_1920 %>%
+            mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
+          group_by(Pos) %>%
+          summarize(
+          player = Player,
+          gp = GP,
+          g_toi = G/TOI,
+          a_toi = A/TOI,
+          pts_toi = PTS/TOI,
+          ppg_toi = PPG/TOI,
+          ppa_toi = PPA/TOI,
+          s_toi = S/TOI,
+          blk_toi = BLK/TOI,
+          hit_toi = HIT/TOI,
+          pim_toi = PIM/TOI,
+          fow_toi = FOW/TOI,
+          hit_toi = HIT/TOI,
+          pim_toi = PIM/TOI,
+          fow_toi = FOW/TOI,
+          fol_toi = FOL/TOI,
+          toi_gp = TOI/GP,
+          n=n())
 
