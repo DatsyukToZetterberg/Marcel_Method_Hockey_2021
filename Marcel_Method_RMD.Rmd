@@ -9,27 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-
 library(tidyverse) 
 library(here) 
 library(readxl) 
@@ -43,11 +22,15 @@ season_1718 <- read_csv(here("data","1718_season.csv"))
 season_1819 <- read_csv(here("data","1819_season.csv"))
 season_1920 <- read_csv(here("data","1920_season.csv"))
 
+season_1718$season <- c(2018)
+season_1819$season <- c(2019)
+season_1920$season <- c(2020)
+
 Load in our 3 season we're going to be using for the Marcel Method
 
 names(season_1718)
 
-Things to note: In order to complete Marcel projections I need 1) Season weights (I'm sticking with 5/4/3) 2) I'll need to find each players average in the relevant seasons 3) I'll need to find the league average for F/D in each category 4) Regress the player usiong the league average at their position 5) Determine their projected TOI 6) Apply age adjustment 7) adjust based on 2020 baseline
+Things to note: In order to complete Marcel projections I need 1) Season weights (I'm sticking with 5/4/3) 2) I'll need to find each players average in the relevant seasons 3) I'll need to find the league average for F/D in each category 4) Regress the player using the league average at their position 5) Determine their projected TOI 6) Apply age adjustment 7) adjust based on 2020 baseline
 
 
 ## Finding the league averages for the stats we're going to use is the first order of business: 
@@ -57,59 +40,68 @@ lg_avg_1920 <- season_1920 %>%
           mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
           group_by(Pos) %>%
           summarize(
-          AVG_gp = mean(GP, na.rm = TRUE),
-  lg_avg_G = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-  lg_avg_A = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-  lg_avg_PTS = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PPG = mean(PPG, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PPA = mean(PPA, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_S = mean(S, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_BLK = mean(BLK, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_HIT = mean(HIT, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PIM = mean(PIM, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_FOW = mean(FOW, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_FOL = mean(FOL, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_TOI = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
-          n = n())
+          season = 2020,
+          lg_avg_gp = mean(GP, na.rm = TRUE),
+        lg_avg_g = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_a = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_pts = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_ppg = mean(PPG, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_ppa = mean(PPA, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_s = mean(S, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_blk = mean(BLK, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_hit = mean(HIT, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_pim = mean(PIM, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_fow = mean(FOW, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_fol = mean(FOL, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_toi = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
+         )
 
 lg_avg_1819 <- season_1819 %>%
           mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
           group_by(Pos) %>%
           summarize(
-          AVG_gp = mean(GP, na.rm = TRUE),
-        lg_avg_G = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_A = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PTS = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PPG = mean(PPG, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PPA = mean(PPA, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_S = mean(S, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_BLK = mean(BLK, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_HIT = mean(HIT, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PIM = mean(PIM, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_FOW = mean(FOW, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_FOL = mean(FOL, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_TOI = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
-          n = n())
+          season = 2019,
+        lg_avg_gp = mean(GP, na.rm = TRUE),
+        lg_avg_g = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_a = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_pts = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_ppg = mean(PPG, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_ppa = mean(PPA, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_s = mean(S, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_blk = mean(BLK, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_hit = mean(HIT, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_pim = mean(PIM, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_fow = mean(FOW, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_fol = mean(FOL, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_toi = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
+          )
 
 
 lg_avg_1718 <- season_1718 %>%
           mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
           group_by(Pos) %>%
           summarize(
-          AVG_gp = mean(GP, na.rm = TRUE),
-        lg_avg_G = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_A = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PTS = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PPG = mean(PPG, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PPA = mean(PPA, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_S = mean(S, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_BLK = mean(BLK, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_HIT = mean(HIT, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_PIM = mean(PIM, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_FOW = mean(FOW, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_FOL = mean(FOL, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
-        lg_avg_TOI = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
-          n = n())
+          season = 2018, 
+          lg_avg_gp = mean(GP, na.rm = TRUE),
+        lg_avg_g = mean(G, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_a = mean(A, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_pts = mean(PTS, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_ppg = mean(PPG, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_ppa = mean(PPA, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_s = mean(S, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_blk = mean(BLK, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_hit = mean(HIT, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_pim = mean(PIM, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_fow = mean(FOW, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_fol = mean(FOL, na.rm = TRUE)/mean(TOI, na.rm = TRUE),
+        lg_avg_toi = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
+          )
+
+# Now we combine the lg_avg stats to make one nice table. 
+
+g <- merge(lg_avg_1718, lg_avg_1819, by = intersect(names(lg_avg_1718), names(lg_avg_1819)), all = TRUE)
+
+lg_avg_1720 <- merge(g, lg_avg_1920, by = intersect(names(g), names(lg_avg_1920)), all = TRUE)
 
 ## Finding each players rate stats
 
@@ -118,67 +110,155 @@ plyr_rt_1718 <- season_1718 %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
+          age = Age, 
+          season = season,
           gp = GP,
-          g_toi = G/TOI,
-          a_toi = A/TOI,
-          pts_toi = PTS/TOI,
-          ppg_toi = PPG/TOI,
-          ppa_toi = PPA/TOI,
-          s_toi = S/TOI,
-          blk_toi = BLK/TOI,
-          hit_toi = HIT/TOI,
-          pim_toi = PIM/TOI,
-          fow_toi = FOW/TOI,
-          hit_toi = HIT/TOI,
-          pim_toi = PIM/TOI,
-          fow_toi = FOW/TOI,
-          fol_toi = FOL/TOI,
-          toi_gp = TOI/GP,
-          n=n())
-          
+          g = G,
+          a = A,
+          pts = PTS,
+          ppg = PPG,
+          ppa = PPA,
+          s = S,
+          blk = BLK,
+          hit = HIT,
+          pim = PIM,
+          fow = FOW,
+          hit = HIT,
+          pim = PIM,
+          fow = FOW,
+          fol = FOL,
+          toi = TOI,
+          )
+
 plyr_rt_1819 <- season_1819 %>%
             mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
+          age = Age, 
+          season = season,
           gp = GP,
-          g_toi = G/TOI,
-          a_toi = A/TOI,
-          pts_toi = PTS/TOI,
-          ppg_toi = PPG/TOI,
-          ppa_toi = PPA/TOI,
-          s_toi = S/TOI,
-          blk_toi = BLK/TOI,
-          hit_toi = HIT/TOI,
-          pim_toi = PIM/TOI,
-          fow_toi = FOW/TOI,
-          hit_toi = HIT/TOI,
-          pim_toi = PIM/TOI,
-          fow_toi = FOW/TOI,
-          fol_toi = FOL/TOI,
-          toi_gp = TOI/GP,
-          n=n())
+          g = G,
+          a = A,
+          pts = PTS,
+          ppg = PPG,
+          ppa = PPA,
+          s = S,
+          blk = BLK,
+          hit = HIT,
+          pim = PIM,
+          fow = FOW,
+          hit = HIT,
+          pim = PIM,
+          fow = FOW,
+          fol = FOL,
+          toi = TOI,
+          )
+
 
 plyr_rt_1920 <- season_1920 %>%
             mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
+          age = Age, 
+          season = season,
           gp = GP,
-          g_toi = G/TOI,
-          a_toi = A/TOI,
-          pts_toi = PTS/TOI,
-          ppg_toi = PPG/TOI,
-          ppa_toi = PPA/TOI,
-          s_toi = S/TOI,
-          blk_toi = BLK/TOI,
-          hit_toi = HIT/TOI,
-          pim_toi = PIM/TOI,
-          fow_toi = FOW/TOI,
-          hit_toi = HIT/TOI,
-          pim_toi = PIM/TOI,
-          fow_toi = FOW/TOI,
-          fol_toi = FOL/TOI,
-          toi_gp = TOI/GP,
-          n=n())
+          g = G,
+          a = A,
+          pts = PTS,
+          ppg = PPG,
+          ppa = PPA,
+          s = S,
+          blk = BLK,
+          hit = HIT,
+          pim = PIM,
+          fow = FOW,
+          hit = HIT,
+          pim = PIM,
+          fow = FOW,
+          fol = FOL,
+          toi = TOI,
+          )
 
+# Join the seasons together. In this case I used the merge function twice. 
+
+a <- merge(plyr_rt_1718, plyr_rt_1819, by = intersect(names(plyr_rt_1718), names(plyr_rt_1819)), all = TRUE)
+
+plyr_rt_1720 <- merge(a, plyr_rt_1920, by = intersect(names(a), names(plyr_rt_1920)), all = TRUE)
+
+# Test to see if the joined seasons can call data.
+
+x = subset(plyr_rt_1720, player == "Patrik Laine")$g
+y = subset(plyr_rt_1720, player == "Patrik Laine")$toi
+gp = subset(plyr_rt_1720, player == "Patrik Laine")$gp
+
+t <- subset(plyr_rt_1720, player == "Patrik Laine")$weights
+t
+
+t %*% x
+
+# 392 is Laine's weighted goals/min in the 3 seasons.(28*5)+(30*4)+(44*3) = 392. We know the formula is doing it the calculation correctly. 
+
+## With the data working as intended we now need to insert the weights = (5 4 3) we will use for the forecast into the df. 
+
+plyr_rt_1720$weights = with(plyr_rt_1720, ifelse(season == 2020,5, ifelse(season == 2019, 4, 3)))
+
+weighted_stats <- plyr_rt_1720 %>%
+                mutate_at(vars(c("g", "a", "pts", "ppg", "ppa", "s", "blk", "hit", "pim", "fow", "fol")), ~.*weights) %>%
+                 mutate(toi_weight = toi*weights)
+                
+# We have the lg avg and the players stats. Now we must combine the 2. Then we need to find the expected rates of production for the minutes a player played. 
+
+combined_set <- merge(x = weighted_stats, y = lg_avg_1720, by = c("season","Pos"))
+
+combined_set_exp <- combined_set %>%
+                        mutate_at(vars(starts_with("lg_")), ~.*toi_weight)
+
+
+df2 <- combined_set_exp %>%             
+        group_by(player) %>%
+        mutate(pos = Pos) %>%
+        summarize(
+                  age = max(age),
+                  sum_g = sum(g),
+                  sum_a = sum(a),
+                  sum_pts = sum(pts),
+                  sum_ppg = sum(ppg),
+                  sum_ppa = sum(ppa),
+                  sum_s = sum(s),
+                  sum_blk = sum(blk),
+                  sum_hit = sum(hit),       
+                  sum_pim = sum(pim),
+                  sum_fow = sum(fow),
+                  sum_fol = sum(fol),
+                  sum_toi = sum(toi),
+                  sum_wtoi = sum(toi_weight),
+                  sum_lg_avg_g = sum(lg_avg_g),
+                  sum_lg_avg_a = sum(lg_avg_a),
+                  sum_lg_avg_pts = sum(lg_avg_pts),
+                  sum_lg_avg_ppg = sum(lg_avg_ppg),
+                  sum_lg_avg_ppa = sum(lg_avg_ppa),
+                  sum_lg_avg_s = sum(lg_avg_s),
+                  sum_lg_avg_blk = sum(lg_avg_blk),
+                  sum_lg_avg_hit = sum(lg_avg_hit),
+                  sum_lg_avg_pim = sum(lg_avg_pim),
+                  sum_lg_avg_fow = sum(lg_avg_fow),
+                  sum_lg_avg_fol = sum(lg_avg_fol),
+                  sum_lg_avg_toi = sum(lg_avg_fol)) 
+                  
+
+
+
+                
+combined_set_exp
+
+proj_2021 <- 
+
+Projected F TOI = (n-1TOI * .52) + (n-2TOI * .21) + (200)
+Projected D TOI = (n-1TOI * .50) + (n-2TOI * .23) + (250)
+
+
+
+
+https://baseballwithr.wordpress.com/2014/06/25/marcel-the-matrix/
