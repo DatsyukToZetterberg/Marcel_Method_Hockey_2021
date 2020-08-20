@@ -217,9 +217,8 @@ combined_set_exp <- combined_set %>%
 
 
 df2 <- combined_set_exp %>%             
-        group_by(player) %>%
-        mutate(pos = Pos) %>%
-        summarize(
+        group_by(player, Pos) %>%
+                summarize(
                   age = max(age),
                   sum_g = sum(g),
                   sum_a = sum(a),
@@ -247,11 +246,10 @@ df2 <- combined_set_exp %>%
                   sum_lg_avg_fol = sum(lg_avg_fol),
                   sum_lg_avg_toi = sum(lg_avg_fol)) 
                   
-
+#fix age, make sure it's the right age for the aplyers
 
 
                 
-combined_set_exp
 
 proj_2021 <- 
 
