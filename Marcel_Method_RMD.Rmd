@@ -26,6 +26,8 @@ season_1718$season <- c(2018)
 season_1819$season <- c(2019)
 season_1920$season <- c(2020)
 
+
+
 Load in our 3 season we're going to be using for the Marcel Method
 
 names(season_1718)
@@ -106,13 +108,13 @@ lg_avg_1720 <- merge(g, lg_avg_1920, by = intersect(names(g), names(lg_avg_1920)
 ## Finding each players rate stats
 
 plyr_rt_1718 <- season_1718 %>%
-            mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
+            mutate(Pos = ifelse(Pos != "D", "F", "D")) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
           age = Age, 
           season = season,
-          gp = GP,
+          gp = GP, 
           g = G,
           a = A,
           pts = PTS,
@@ -127,11 +129,11 @@ plyr_rt_1718 <- season_1718 %>%
           pim = PIM,
           fow = FOW,
           fol = FOL,
-          toi = TOI,
+          toi_gp = TOI/GP,
           )
 
 plyr_rt_1819 <- season_1819 %>%
-            mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
+            mutate(Pos = ifelse(Pos != "D", "F", "D")) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
@@ -152,18 +154,18 @@ plyr_rt_1819 <- season_1819 %>%
           pim = PIM,
           fow = FOW,
           fol = FOL,
-          toi = TOI,
+          toi_gp = TOI/GP,
           )
 
 
 plyr_rt_1920 <- season_1920 %>%
-            mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
+            mutate(Pos = ifelse(Pos != "D", "F", "D")) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
           age = Age, 
           season = season,
-          gp = GP,
+          gp = GP, 
           g = G,
           a = A,
           pts = PTS,
@@ -178,7 +180,7 @@ plyr_rt_1920 <- season_1920 %>%
           pim = PIM,
           fow = FOW,
           fol = FOL,
-          toi = TOI,
+          toi_gp = TOI/GP,
           )
 
 # Join the seasons together. In this case I used the merge function twice. 
@@ -206,18 +208,19 @@ plyr_rt_1720$weights = with(plyr_rt_1720, ifelse(season == 2020,5, ifelse(season
 
 weighted_stats <- plyr_rt_1720 %>%
                 mutate_at(vars(c("g", "a", "pts", "ppg", "ppa", "s", "blk", "hit", "pim", "fow", "fol")), ~.*weights) %>%
-                 mutate(toi_weight = toi*weights)
+                 mutate(toi_weight = toi_gp*weights)
                 
-# We have the lg avg and the players stats. Now we must combine the 2. Then we need to find the expected rates of production for the minutes a player played. 
+# We have the lg avg and the players stats. Now we must combine the 2. Then we need to find the expected rates of production for the minutes a player played. As well, we will adjust the age of the players to their age for the 2021 season.
 
 combined_set <- merge(x = weighted_stats, y = lg_avg_1720, by = c("season","Pos"))
 
 combined_set_exp <- combined_set %>%
-                        mutate_at(vars(starts_with("lg_")), ~.*toi_weight)
+                        mutate_at(vars(starts_with("lg_")), ~.*toi_weight) %>%
+                        mutate(age = ifelse(season == 2018, age + 3, ifelse(season == 2019, age + 2, age +1))) 
 
 
-df2 <- combined_set_exp %>%             
-        group_by(player, Pos) %>%
+sum_plyr <- combined_set_exp %>%             
+                group_by(player, Pos) %>%
                 summarize(
                   age = max(age),
                   sum_g = sum(g),
@@ -231,7 +234,7 @@ df2 <- combined_set_exp %>%
                   sum_pim = sum(pim),
                   sum_fow = sum(fow),
                   sum_fol = sum(fol),
-                  sum_toi = sum(toi),
+                  sum_toi_gp = sum(toi_gp),
                   sum_wtoi = sum(toi_weight),
                   sum_lg_avg_g = sum(lg_avg_g),
                   sum_lg_avg_a = sum(lg_avg_a),
@@ -246,17 +249,14 @@ df2 <- combined_set_exp %>%
                   sum_lg_avg_fol = sum(lg_avg_fol),
                   sum_lg_avg_toi = sum(lg_avg_fol)) 
                   
-#fix age, make sure it's the right age for the aplyers
+
+# With sum_plyr made. We need to combine the summed numbers. We also need to find the players projected TOI!.
+
+Projected F TOI = (n-1TOI * .52) + (n-2TOI * .21) + (200/82)
+Projected D TOI = (n-1TOI * .50) + (n-2TOI * .23) + (250/82)
+
+bur <- mutate(combined_set_exp, proj_toi = ifelse(Pos == "F" & season == 2019, toi*.21 ,ifelse(season == 2020 & Pos == "F", toi *.52, 0)))
+
+tmgp1920 <- season_1920 %>% group_by(Tm) %>% summarize(max(GP))
 
 
-                
-
-proj_2021 <- 
-
-Projected F TOI = (n-1TOI * .52) + (n-2TOI * .21) + (200)
-Projected D TOI = (n-1TOI * .50) + (n-2TOI * .23) + (250)
-
-
-
-
-https://baseballwithr.wordpress.com/2014/06/25/marcel-the-matrix/
