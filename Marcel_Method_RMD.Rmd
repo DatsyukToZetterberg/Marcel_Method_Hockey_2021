@@ -16,7 +16,7 @@ library(knitr)
 library(kableExtra)
 library(rmarkdown)
 
-season_1516 <- read_csv(here("data","1617_season.csv"))
+season_1516 <- read_csv(here("data","1516_season.csv"))
 season_1617 <- read_csv(here("data","1617_season.csv"))
 season_1718 <- read_csv(here("data","1718_season.csv"))
 season_1819 <- read_csv(here("data","1819_season.csv"))
@@ -28,7 +28,7 @@ season_1718$season <- c(2018)
 season_1819$season <- c(2019)
 season_1920$season <- c(2020)
 
-pred_year = 2019 #this is the season in which we're trying to forecast the players stats
+pred_year = 2021 #this is the season in which we're trying to forecast the players stats
 
 n3 = pred_year-3
 n2 = pred_year-2
@@ -109,9 +109,9 @@ lg_avg_n3 <- season_1718 %>%
 
 # Now we combine the lg_avg stats to make one nice table. 
 
-g <- merge(lg_avg_n3, lg_avg_n2, by = intersect(names(lg_avg_n3), names(lg_avg_n2)), all = TRUE)
+lg_avg_merg1 <- merge(lg_avg_n3, lg_avg_n2, by = intersect(names(lg_avg_n3), names(lg_avg_n2)), all = TRUE)
 
-lg_avg_cmb <- merge(g, lg_avg_n1, by = intersect(names(g), names(lg_avg_n1)), all = TRUE)
+lg_avg_cmb <- merge(lg_avg_merg1, lg_avg_n1, by = intersect(names(lg_avg_merg1), names(lg_avg_n1)), all = TRUE)
 
 ## Finding each players rate stats
 
@@ -195,11 +195,11 @@ plyr_rt_n3 <- season_1718 %>%
 
 # Join the seasons together. In this case I used the merge function twice. 
 
-a <- merge(plyr_rt_n3, plyr_rt_n2, by = intersect(names(plyr_rt_n3), names(plyr_rt_n2)), all = TRUE)
+plyr_merge1 <- merge(plyr_rt_n3, plyr_rt_n2, by = intersect(names(plyr_rt_n3), names(plyr_rt_n2)), all = TRUE)
 
-plyr_rt_cmb <- merge(a, plyr_rt_n1, by = intersect(names(a), names(plyr_rt_n1)), all = TRUE)
+plyr_rt_cmb <- merge(plyr_merge1, plyr_rt_n1, by = intersect(names(plyr_merge1), names(plyr_rt_n1)), all = TRUE)
 
-## With the data working as intended we now need to insert the weights = (5 4 3) we will use for the forecast into the df. 
+#insert the weights = (5 4 3) into the df. 
 
 plyr_rt_cmb$weights = with(plyr_rt_cmb, ifelse(season == n1,5, ifelse(season == n2, 4, 3)))
 
@@ -212,7 +212,7 @@ weighted_stats <- plyr_rt_cmb %>%
                                     (Pos == "D" & season == n1) ~ 0.64 * toi_gp + (250/82),
                                     TRUE ~ 0.00))
                 
-#We have the lg avg and the players stats. Now we must combine the 2. Then we need to find the expected rates of production for the minutes a player played. As well, we will adjust the age of the players to their age for the 2021 season.
+#Combine the 2 sets of data, weighted stats and the lg averages. We'll also adjust the age of the players to their age for the 2021 season.
 
 combined_set <- merge(x = weighted_stats, y = lg_avg_cmb, by = c("season","Pos"))
 
@@ -254,8 +254,8 @@ sum_plyr <- combined_set_exp %>%
 
 # With sum_plyr made. We need to combine the summed numbers. 
 
-f = (2000/82) #this is 2250/82 or 2 seasons worth of lg_avg toi for F
-d = (2750/82) #this is 3000/82 or 2 seasons worth of lg_avg toi for D
+f = (2000/82) 
+d = (2750/82) #this is the amount of toi that will regress the players production towards their positions average
 
 proj_plyr <- sum_plyr %>% mutate(proj_g = ((((sum_lg_avg_g/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_g)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82) %>%
                       mutate(proj_a = ((((sum_lg_avg_a/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_a)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82) %>%
@@ -269,8 +269,12 @@ proj_plyr <- sum_plyr %>% mutate(proj_g = ((((sum_lg_avg_g/sum_wtoi)*ifelse(Pos 
                       mutate(proj_fow = ((((sum_lg_avg_fow/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_fow)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82) %>%
                       mutate(proj_fol = ((((sum_lg_avg_fol/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_fol)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82)
                 
+# using the toi from above we can now complete the forecast, the only remaining step is the age adjustment. The basic formula above is: 
+# ((sum_lg_avg_X/sum_wtoi*(f or d))+sum_X)/((f or d)+sum_wtoi) this gives us the players stat on a per minute basis. Multiply by proj_toi to get a per game rate and then by 82 to get a full season rate.
 
 proj_stat_age <-proj_plyr %>% mutate_at(vars(starts_with("proj")), ~.*(ifelse(age <= 28, (28 - age)*0.01, (28-age)*0.005)+1))
+
+#Basic age adjustment. Increased the amount but kept the ratio between the two the same.
 
 projections21 <- proj_stat_age %>% summarize(
         player = player,
@@ -293,9 +297,4 @@ projections21 <- proj_stat_age %>% summarize(
           fol = proj_fol)
           
 
-write.csv(projections20, file = "C:\\Users\\Me\\Documents\\R\\Github\\Repos\\Marcel_Method_Hockey_2021\\Marcel_proj20.csv", row.names = FALSE)
-
-wap <- plyr_rt_n1 %>% inner_join(plyr_rt_n2, by = "player") %>% inner_join (plyr_rt_n3, by = "player")
-
-write.csv(wap, file = "C:\\Users\\Me\\Documents\\R\\Github\\Repos\\Marcel_Method_Hockey_2021\\wap.csv", row.names = FALSE)
-
+write.csv(projections19, file = "C:\\Users\\Me\\Documents\\R\\Github\\Repos\\Marcel_Method_Hockey_2021\\Marcel_proj21.csv", row.names = FALSE)
