@@ -35,12 +35,12 @@ n2 = pred_year-2
 n1 = pred_year-1
 
 
-Load in the seasons you'll be using and add in the season var.
+#Load in the seasons you'll be using and add in the season var. Using the ns will allow us to automate steps in the future
 
-Things to note: In order to complete Marcel projections I need 1) Season weights (I'm sticking with 5/4/3) 2) I'll need to find each players average in the relevant seasons 3) I'll need to find the league average for F/D in each category 4) Regress the player using the league average at their position 5) Determine their projected TOI 6) Apply age adjustment 7) adjust based on 2020 baseline
+##Things to note: In order to complete Marcel projections I need 1) Season weights (I'm sticking with 5/4/3) 2) I'll need to find each players average in the relevant seasons 3) I'll need to find the league average for F/D in each category 4) Regress the player using the league average at their position 5) Determine their projected TOI 6) Apply age adjustment 7) adjust based on 2020 baseline
 
 
-## Finding the league averages for the stats we're going to use is the first order of business: 
+#Finding the league averages for the stats we're going to use is the first order of business: 
 
 
 lg_avg_n1 <- season_1920 %>%
@@ -107,7 +107,7 @@ lg_avg_n3 <- season_1718 %>%
         lg_avg_toi = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
           )
 
-# Now we combine the lg_avg stats to make one nice table. 
+#Now we combine the lg_avg stats to make one nice table. 
 
 lg_avg_merg1 <- merge(lg_avg_n3, lg_avg_n2, by = intersect(names(lg_avg_n3), names(lg_avg_n2)), all = TRUE)
 
@@ -252,7 +252,7 @@ sum_plyr <- combined_set_exp %>%
                   sum_lg_avg_toi = sum(lg_avg_fol)) 
                   
 
-# With sum_plyr made. We need to combine the summed numbers. 
+#With sum_plyr made. We need to combine the summed numbers. 
 
 f = (2000/82) 
 d = (2750/82) #this is the amount of toi that will regress the players production towards their positions average
@@ -269,8 +269,8 @@ proj_plyr <- sum_plyr %>% mutate(proj_g = ((((sum_lg_avg_g/sum_wtoi)*ifelse(Pos 
                       mutate(proj_fow = ((((sum_lg_avg_fow/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_fow)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82) %>%
                       mutate(proj_fol = ((((sum_lg_avg_fol/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_fol)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82)
                 
-# using the toi from above we can now complete the forecast, the only remaining step is the age adjustment. The basic formula above is: 
-# ((sum_lg_avg_X/sum_wtoi*(f or d))+sum_X)/((f or d)+sum_wtoi) this gives us the players stat on a per minute basis. Multiply by proj_toi to get a per game rate and then by 82 to get a full season rate.
+#using the toi from above we can now complete the forecast, the only remaining step is the age adjustment. The basic formula above is: 
+#((sum_lg_avg_X/sum_wtoi*(f or d))+sum_X)/((f or d)+sum_wtoi) this gives us the players stat on a per minute basis. Multiply by proj_toi to get a per game rate and then by 82 to get a full season rate.
 
 proj_stat_age <-proj_plyr %>% mutate_at(vars(starts_with("proj")), ~.*(ifelse(age <= 28, (28 - age)*0.01, (28-age)*0.005)+1))
 
