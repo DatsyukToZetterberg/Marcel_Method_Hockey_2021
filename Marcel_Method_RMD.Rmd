@@ -22,30 +22,36 @@ season_1718 <- read_csv(here("data","1718_season.csv"))
 season_1819 <- read_csv(here("data","1819_season.csv"))
 season_1920 <- read_csv(here("data","1920_season.csv"))
 
+
 season_1516$season <- c(2016)
 season_1617$season <- c(2017)
 season_1718$season <- c(2018)
 season_1819$season <- c(2019)
 season_1920$season <- c(2020)
 
-pred_year = 2021 #this is the season in which we're trying to forecast the players stats
+colnames(season_1718)[11] <- "EVG"
+
+all_season <- bind_rows(season_1516, season_1617,season_1718, season_1819, season_1920)
+
+pred_year = 2019 #this is the season in which we're trying to forecast the players stats
 
 n3 = pred_year-3
 n2 = pred_year-2
 n1 = pred_year-1
 
-
 #Load in the seasons you'll be using and add in the season var. Using the ns will allow us to automate steps in the future
 
-##Things to note: In order to complete Marcel projections I need 1) Season weights (I'm sticking with 5/4/3) 2) I'll need to find each players average in the relevant seasons 3) I'll need to find the league average for F/D in each category 4) Regress the player using the league average at their position 5) Determine their projected TOI 6) Apply age adjustment 7) adjust based on 2020 baseline
+# Things to note: 
+#In order to complete Marcel projections you need 1) Season weights (I'm sticking with 5/4/3) 2) the players average in the relevant seasons 3) league averages for F/D in each category 4) Regress the player using the league average at their position 5) Determine their projected TOI 6) Apply age adjustment
 
 
-#Finding the league averages for the stats we're going to use is the first order of business: 
+#Finding the league averages            
 
 
-lg_avg_n1 <- season_1920 %>%
+lg_avg_n1 <- all_season %>%
           mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
           filter(GP >= 15) %>%
+          filter(season == n1) %>%
           group_by(Pos) %>%
           summarize(
           season = n1,
@@ -64,9 +70,11 @@ lg_avg_n1 <- season_1920 %>%
         lg_avg_toi = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
          )
 
-lg_avg_n2 <- season_1819 %>%
+
+lg_avg_n2 <- all_season %>%
           mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
            filter(GP >= 15) %>%
+           filter(season == n2) %>%
           group_by(Pos) %>%
           summarize(
           season = n2,
@@ -86,9 +94,10 @@ lg_avg_n2 <- season_1819 %>%
           )
 
 
-lg_avg_n3 <- season_1718 %>%
+lg_avg_n3 <- all_season %>%
           mutate(Pos = replace(Pos, Pos != "D", "F")) %>%
            filter(GP >= 15) %>%
+           filter(season == n3) %>%
           group_by(Pos) %>%
           summarize(
           season = n3, 
@@ -107,17 +116,16 @@ lg_avg_n3 <- season_1718 %>%
         lg_avg_toi = mean(TOI, na.rm = TRUE)/mean(GP, na.rm = TRUE),
           )
 
-#Now we combine the lg_avg stats to make one nice table. 
+#Now we combine the lg_avg stats 
 
-lg_avg_merg1 <- merge(lg_avg_n3, lg_avg_n2, by = intersect(names(lg_avg_n3), names(lg_avg_n2)), all = TRUE)
+lg_avg_cmb <- bind_rows(lg_avg_n1,lg_avg_n2, lg_avg_n3)
 
-lg_avg_cmb <- merge(lg_avg_merg1, lg_avg_n1, by = intersect(names(lg_avg_merg1), names(lg_avg_n1)), all = TRUE)
+#Finding each players rate stats in each season
 
-## Finding each players rate stats
-
-plyr_rt_n1 <- season_1920 %>%
+plyr_rt_n1 <- all_season %>%
             mutate(Pos = ifelse(Pos != "D", "F", "D")) %>%
              filter(GP >= 15) %>%
+              filter(season == n1) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
@@ -141,9 +149,10 @@ plyr_rt_n1 <- season_1920 %>%
           toi_gp = TOI/GP,
           )
 
-plyr_rt_n2 <- season_1819 %>%
+plyr_rt_n2 <- all_season %>%
             mutate(Pos = ifelse(Pos != "D", "F", "D")) %>%
              filter(GP >= 15) %>%
+              filter(season == n2) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
@@ -167,9 +176,10 @@ plyr_rt_n2 <- season_1819 %>%
           toi_gp = TOI/GP,
           )
 
-plyr_rt_n3 <- season_1718 %>%
+plyr_rt_n3 <- all_season %>%
             mutate(Pos = ifelse(Pos != "D", "F", "D")) %>%
              filter(GP >= 15) %>%
+              filter(season == n3) %>%
           group_by(Pos) %>%
           summarize(
           player = Player,
@@ -193,13 +203,11 @@ plyr_rt_n3 <- season_1718 %>%
           toi_gp = TOI/GP,
           )
 
-# Join the seasons together. In this case I used the merge function twice. 
+#Join the seasons together.                             
 
-plyr_merge1 <- merge(plyr_rt_n3, plyr_rt_n2, by = intersect(names(plyr_rt_n3), names(plyr_rt_n2)), all = TRUE)
+plyr_rt_cmb <- bind_rows(plyr_rt_n1,plyr_rt_n2,plyr_rt_n3)
 
-plyr_rt_cmb <- merge(plyr_merge1, plyr_rt_n1, by = intersect(names(plyr_merge1), names(plyr_rt_n1)), all = TRUE)
-
-#insert the weights = (5 4 3) into the df. 
+#insert the weights = (5 4 3) into the df. Proj toi number comes from augmented values from EH
 
 plyr_rt_cmb$weights = with(plyr_rt_cmb, ifelse(season == n1,5, ifelse(season == n2, 4, 3)))
 
@@ -207,9 +215,9 @@ weighted_stats <- plyr_rt_cmb %>%
                 mutate_at(vars(c("gp", "g", "a", "pts", "ppg", "ppa", "s", "blk", "hit", "pim", "fow", "fol")), ~.*weights) %>%
                  mutate(toi_weight = toi_gp*weights) %>%
                  mutate(proj_toi = case_when((Pos == "F" & season == n2) ~ 0.20 * toi_gp,
-                                    (Pos == "F" & season == n1) ~ 0.64 * toi_gp + (200/82),
+                                    (Pos == "F" & season == n1) ~ 0.5 * toi_gp + (416/82),
                                     (Pos == "D" & season == n2) ~ 0.20 * toi_gp,
-                                    (Pos == "D" & season == n1) ~ 0.64 * toi_gp + (250/82),
+                                    (Pos == "D" & season == n1) ~ 0.5 * toi_gp + (500/82),
                                     TRUE ~ 0.00))
                 
 #Combine the 2 sets of data, weighted stats and the lg averages. We'll also adjust the age of the players to their age for the 2021 season.
@@ -254,8 +262,8 @@ sum_plyr <- combined_set_exp %>%
 
 #With sum_plyr made. We need to combine the summed numbers. 
 
-f = (2000/82) 
-d = (2750/82) #this is the amount of toi that will regress the players production towards their positions average
+f = (2500/82) 
+d = (3000/82) #this is the amount of toi that will regress the players production towards their positions average
 
 proj_plyr <- sum_plyr %>% mutate(proj_g = ((((sum_lg_avg_g/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_g)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82) %>%
                       mutate(proj_a = ((((sum_lg_avg_a/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_a)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82) %>%
@@ -270,13 +278,13 @@ proj_plyr <- sum_plyr %>% mutate(proj_g = ((((sum_lg_avg_g/sum_wtoi)*ifelse(Pos 
                       mutate(proj_fol = ((((sum_lg_avg_fol/sum_wtoi)*ifelse(Pos == "F",f,d))+sum_fol)/(ifelse(Pos == "F",f,d)+sum_wtoi))*sum_projtoi*82)
                 
 #using the toi from above we can now complete the forecast, the only remaining step is the age adjustment. The basic formula above is: 
-#((sum_lg_avg_X/sum_wtoi*(f or d))+sum_X)/((f or d)+sum_wtoi) this gives us the players stat on a per minute basis. Multiply by proj_toi to get a per game rate and then by 82 to get a full season rate.
+#((sum_lg_avg_X/sum_wtoi*(f or d))+sum_X)/((f or d)+sum_wtoi) with x being the stat we're trying to predict. This gives us the players stat on a per minute basis. Multiply by proj_toi to get a per game rate and then by 82 to get a full season rate.
 
 proj_stat_age <-proj_plyr %>% mutate_at(vars(starts_with("proj")), ~.*(ifelse(age <= 28, (28 - age)*0.01, (28-age)*0.005)+1))
 
-#Basic age adjustment. Increased the amount but kept the ratio between the two the same.
+#Basic age adjustment. Increased the amount but kept the ratio between the two the same (0.006 and 0.003 vs 0.01 and 0.005)
 
-projections21 <- proj_stat_age %>% summarize(
+projections19 <- proj_stat_age %>% summarize(
         player = player,
         Pos = Pos,
         age = age,
@@ -296,5 +304,5 @@ projections21 <- proj_stat_age %>% summarize(
           fow = proj_fow,
           fol = proj_fol)
           
+write.csv(projections19, file = "C:\\Users\\Me\\Documents\\R\\Github\\Repos\\Marcel_Method_Hockey_2021\\Marcel_proj19.csv", row.names = FALSE)
 
-write.csv(projections19, file = "C:\\Users\\Me\\Documents\\R\\Github\\Repos\\Marcel_Method_Hockey_2021\\Marcel_proj21.csv", row.names = FALSE)
